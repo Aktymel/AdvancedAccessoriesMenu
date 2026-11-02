@@ -31,17 +31,27 @@ namespace AdvancedAccessoriesMenu
             return true;
         }
 
+        private static readonly Vector3[] Corners = new Vector3[4];
+
         // Screen area of a UI element in GUI coordinates
         public static Rect ScreenRect(RectTransform rt)
         {
-            var corners = new Vector3[4];
-            rt.GetWorldCorners(corners);
-            var canvas = rt.GetComponentInParent<Canvas>();
-            if (canvas != null) canvas = canvas.rootCanvas;
-            var cam = canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-            var min = RectTransformUtility.WorldToScreenPoint(cam, corners[0]);
-            var max = RectTransformUtility.WorldToScreenPoint(cam, corners[2]);
+            return ScreenRect(rt, CanvasCamera(rt));
+        }
+
+        public static Rect ScreenRect(RectTransform rt, Camera cam)
+        {
+            rt.GetWorldCorners(Corners);
+            var min = RectTransformUtility.WorldToScreenPoint(cam, Corners[0]);
+            var max = RectTransformUtility.WorldToScreenPoint(cam, Corners[2]);
             return new Rect(min.x, Screen.height - max.y, max.x - min.x, max.y - min.y);
+        }
+
+        public static Camera CanvasCamera(Transform t)
+        {
+            var canvas = t.GetComponentInParent<Canvas>();
+            if (canvas != null) canvas = canvas.rootCanvas;
+            return canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
         }
 
         public static void Hide(CanvasGroup group, bool hidden)

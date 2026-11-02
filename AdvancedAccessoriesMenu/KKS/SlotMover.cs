@@ -20,15 +20,28 @@ namespace AdvancedAccessoriesMenu
         {
             get
             {
-#if KK
-                // Pregnancy Plus for KK has its own versions (6.x) and isn't checked yet
-                return null;
-#else
-                PluginInfo info;
-                if (!Chainloader.PluginInfos.TryGetValue("KK_PregnancyPlus", out info)) return null;
-                return info.Metadata.Version < new Version(7, 9) ? "Pregnancy Plus 7.9+ needed for Move/Copy." : null;
-#endif
+                if (!_warningChecked)
+                {
+                    _warningChecked = true;
+                    _warning = FindWarning();
+                }
+                return _warning;
             }
+        }
+
+        private static bool _warningChecked;
+        private static string _warning;
+
+        private static string FindWarning()
+        {
+#if KK
+            // Pregnancy Plus for KK has its own versions (6.x) and isn't checked yet
+            return null;
+#else
+            PluginInfo info;
+            if (!Chainloader.PluginInfos.TryGetValue("KK_PregnancyPlus", out info)) return null;
+            return info.Metadata.Version < new Version(7, 9) ? "Pregnancy Plus 7.9+ needed for Move/Copy." : null;
+#endif
         }
 
         public static bool Move(int source, int destination)
@@ -92,15 +105,20 @@ namespace AdvancedAccessoriesMenu
             return false;
         }
 
-        // Picks "None" in the slot page's type dropdown like the player does. UpdateSelectAccessoryType is the
-        // dropdown's handler and updates the kind window from the dropdown, so calling it while the dropdown shows
-        // another type put that window's accessory back into the slot.
+        // Picks "None" in the slot page's type dropdown like the player does. The handler must run while the dropdown
+        // shows "None", or it puts the kind window's accessory back into the slot.
         private static void Clear(CvsAccessory page)
         {
-            // The page only shows the slot's current type once it has been updated
-            page.UpdateCustomUI();
             var dropdown = Dropdown(page);
-            if (dropdown != null) dropdown.value = 0;
+            if (dropdown == null) return;
+            if (dropdown.value != 0)
+            {
+                dropdown.value = 0;
+                return;
+            }
+            // Already "None", so setting it wouldn't call the handler
+            page.UpdateSelectAccessoryType(0);
+            page.ChangeSettingVisible(false);
         }
 
         private static CvsAccessory SlotPage(CustomAcsChangeSlot changeSlot, int slot)

@@ -6,6 +6,26 @@ namespace AdvancedAccessoriesMenu
 {
     internal static class Hooks
     {
+        [HarmonyPostfix, HarmonyPatch(typeof(CustomBase), nameof(CustomBase.ChangeAcsSlotName))]
+        private static void ChangeAcsSlotNamePostfix()
+        {
+            AccessoryEvents.Changed();
+        }
+#if HS2
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSceneSpriteAccessoryCondition), nameof(HSceneSpriteAccessoryCondition.Init))]
+        private static void AccessoryPanelInitPostfix(HSceneSpriteAccessoryCondition __instance)
+        {
+            if (HSceneWindow.Instance != null) HSceneWindow.Instance.SetPanel(__instance);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSceneSpriteAccessoryCondition), nameof(HSceneSpriteAccessoryCondition.SetAccessoryCharacter))]
+        private static void SetAccessoryCharacterPostfix(HSceneSpriteAccessoryCondition __instance)
+        {
+            if (HSceneWindow.Instance != null) HSceneWindow.Instance.CharacterChanged();
+        }
+#endif
+
         public static void PatchMoreAccessories(Harmony harmony)
         {
             var type = AccessTools.TypeByName("MoreAccessoriesAI.MoreAccessories");

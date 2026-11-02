@@ -37,6 +37,19 @@ namespace AdvancedAccessoriesMenu
             }
         }
 
+        public string GetGroups(int outfit)
+        {
+            List<SlotGroup> groups;
+            return _groups.TryGetValue(outfit, out groups) && groups.Count > 0 ? SlotGroups.Encode(groups) : null;
+        }
+
+        // A new list, so the menu sees another list and drops what its editor had open
+        public void SetGroups(int outfit, string groups)
+        {
+            _groups[outfit] = SlotGroups.Decode(groups);
+            AccessoryEvents.Changed();
+        }
+
         private int CurrentOutfit
         {
             get
@@ -68,6 +81,7 @@ namespace AdvancedAccessoriesMenu
             }
 
             _groups.Clear();
+            AccessoryEvents.Changed();
             var data = GetExtendedData();
             if (data == null) return;
             foreach (var pair in data.data)
@@ -104,6 +118,7 @@ namespace AdvancedAccessoriesMenu
             object value = null;
             if (data != null) data.data.TryGetValue(CoordinateKey, out value);
             _groups[CurrentOutfit] = SlotGroups.Decode(value as string);
+            AccessoryEvents.Changed();
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ChaCustom;
 using HarmonyLib;
 using Object = UnityEngine.Object;
@@ -7,6 +8,18 @@ namespace AdvancedAccessoriesMenu
 {
     internal static class Hooks
     {
+        [HarmonyPostfix, HarmonyPatch(typeof(CvsAccessory), nameof(CvsAccessory.UpdateSlotName))]
+        private static void UpdateSlotNamePostfix()
+        {
+            AccessoryEvents.Changed();
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HSprite), nameof(HSprite.Init))]
+        private static void HSpriteInitPostfix(HSprite __instance, List<ChaControl> _female)
+        {
+            if (HSceneWindow.Instance != null) HSceneWindow.Instance.SetSprite(__instance, _female);
+        }
+
         public static void PatchMoreAccessories(Harmony harmony)
         {
             var type = AccessTools.TypeByName("MoreAccessoriesKOI.Accessories");
