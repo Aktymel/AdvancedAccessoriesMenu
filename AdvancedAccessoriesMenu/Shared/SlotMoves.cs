@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using KKAPI.Maker;
+using UnityEngine;
 
 namespace AdvancedAccessoriesMenu
 {
@@ -58,6 +59,40 @@ namespace AdvancedAccessoriesMenu
             SlotGroups.Sort(groups);
             return null;
         }
+
+#if KKS || KK
+        // Into the same slots of another outfit, which must be empty and outside its groups
+        public static string CopyGroupToOutfit(GroupsController controller, SlotGroup group, int outfit, string outfitName)
+        {
+            var groups = controller.OutfitGroups(outfit);
+            var other = SlotGroups.FindOverlap(groups, group.First, group.Last, null);
+            if (other != null) return $"Overlaps \"{other.Name}\" in {outfitName}.";
+            var count = AccessoriesApi.GetMakerAccessoryCount();
+            var targetCount = MakerSlots.SlotCount(outfit);
+            var last = Mathf.Min(group.Last, count - 1);
+            for (var slot = group.First; slot <= last; slot++)
+            {
+                if (slot >= targetCount)
+                {
+                    if (!MakerSlots.IsEmpty(slot)) return $"Not enough slots in {outfitName}.";
+                    continue;
+                }
+                if (!MakerSlots.IsEmpty(outfit, slot)) return $"Slot {slot + 1} in {outfitName} is not empty.";
+            }
+
+            var any = false;
+            for (var slot = group.First; slot <= last; slot++)
+                if (!MakerSlots.IsEmpty(slot)) any = true;
+            if (any)
+            {
+                var error = SlotMover.CopyToOutfit(group.First, last, outfit);
+                if (error != null) return error;
+            }
+            groups.Add(new SlotGroup { Name = group.Name, First = group.First, Last = group.Last, Collapsed = group.Collapsed });
+            SlotGroups.Sort(groups);
+            return null;
+        }
+#endif
 
         // Empty slots of a group, or of all slots outside groups when group is null
         public static int FreeSlots(List<SlotGroup> groups, SlotGroup group)

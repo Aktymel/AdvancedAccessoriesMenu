@@ -5,16 +5,26 @@ namespace AdvancedAccessoriesMenu
 {
     internal static class ScreenUi
     {
-        // UI sizes are made for 1080p
-        public static float Scale => Screen.height / 1080f;
+        // UI sizes are made for 1080p. Screen.height can't be used: the IMGUI HiDPI patcher fakes it.
+        public static float Scale(Canvas canvas)
+        {
+            return canvas == null ? 1 : canvas.pixelRect.height / 1080f;
+        }
 
-        // The button that switches between the game's slot list and the Accessories menu
+        // Screen pixels to IMGUI coordinates, which GUI.matrix may scale (IMGUI HiDPI patcher)
+        public static Rect ToGui(Rect rect)
+        {
+            var m = GUI.matrix;
+            return new Rect(rect.x / m.m00, rect.y / m.m11, rect.width / m.m00, rect.height / m.m11);
+        }
+
+        // The button that switches between the game's slot list and the Accessories menu; rect in screen pixels
         public static bool DrawToggleButton(Rect rect, bool advancedOpen)
         {
-            var skin = GUI.skin;
-            GUI.skin = IMGUIUtils.SolidBackgroundGuiSkin;
+            rect = ToGui(rect);
+            GuiTheme.Begin();
             var clicked = GUI.Button(rect, advancedOpen ? "Original" : "Advanced");
-            GUI.skin = skin;
+            GuiTheme.End();
             IMGUIUtils.EatInputInRect(rect);
             return clicked;
         }
@@ -33,25 +43,26 @@ namespace AdvancedAccessoriesMenu
 
         private static readonly Vector3[] Corners = new Vector3[4];
 
-        // Screen area of a UI element in GUI coordinates
+        // Screen area of a UI element in screen pixels, top left origin
         public static Rect ScreenRect(RectTransform rt)
         {
-            return ScreenRect(rt, CanvasCamera(rt));
+            return ScreenRect(rt, RootCanvas(rt));
         }
 
-        public static Rect ScreenRect(RectTransform rt, Camera cam)
+        public static Rect ScreenRect(RectTransform rt, Canvas canvas)
         {
+            var cam = canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            var height = canvas == null ? Screen.height : canvas.pixelRect.height;
             rt.GetWorldCorners(Corners);
             var min = RectTransformUtility.WorldToScreenPoint(cam, Corners[0]);
             var max = RectTransformUtility.WorldToScreenPoint(cam, Corners[2]);
-            return new Rect(min.x, Screen.height - max.y, max.x - min.x, max.y - min.y);
+            return new Rect(min.x, height - max.y, max.x - min.x, max.y - min.y);
         }
 
-        public static Camera CanvasCamera(Transform t)
+        public static Canvas RootCanvas(Transform t)
         {
             var canvas = t.GetComponentInParent<Canvas>();
-            if (canvas != null) canvas = canvas.rootCanvas;
-            return canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            return canvas == null ? null : canvas.rootCanvas;
         }
 
         public static void Hide(CanvasGroup group, bool hidden)

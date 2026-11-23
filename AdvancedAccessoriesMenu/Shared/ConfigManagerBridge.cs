@@ -1,3 +1,4 @@
+using System;
 using BepInEx.Bootstrap;
 using HarmonyLib;
 
@@ -9,6 +10,17 @@ namespace AdvancedAccessoriesMenu
         private const string GUID = "com.bepis.bepinex.configurationmanager";
 
         public static bool Available => Chainloader.PluginInfos.TryGetValue(GUID, out var info) && info.Instance != null;
+
+        private static Func<bool> _getDisplayingWindow;
+        public static bool WindowShown => _getDisplayingWindow != null && _getDisplayingWindow();
+
+        public static void BindVisibility()
+        {
+            if (!Chainloader.PluginInfos.TryGetValue(GUID, out var info) || info.Instance == null) return;
+            var getter = AccessTools.PropertyGetter(info.Instance.GetType(), "DisplayingWindow");
+            if (getter != null)
+                _getDisplayingWindow = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), info.Instance, getter);
+        }
 
         // Opens the F1 window with the search box filled in
         public static void Open(string search)

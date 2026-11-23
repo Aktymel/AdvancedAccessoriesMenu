@@ -36,6 +36,12 @@ namespace AdvancedAccessoriesMenu
             StudioSaveLoadApi.SceneLoad += (sender, e) => UpdateSelected();
         }
 
+        public void Toggle()
+        {
+            if (_switch != null) _switch.Value.OnNext(!Visible);
+            else Visible = !Visible;
+        }
+
         private void UpdateSelected()
         {
             _selected = StudioAPI.StudioLoaded ? StudioAPI.GetSelectedCharacters().FirstOrDefault() : null;
@@ -45,11 +51,10 @@ namespace AdvancedAccessoriesMenu
         {
             if (!Visible) return;
 
-            var skin = GUI.skin;
-            GUI.skin = IMGUIUtils.SolidBackgroundGuiSkin;
+            GuiTheme.Begin();
             _rect = GUILayout.Window(WindowId, _rect, DrawWindow, "Accessories menu");
             IMGUIUtils.EatInputInRect(_rect);
-            GUI.skin = skin;
+            GuiTheme.End();
         }
 
         private void DrawWindow(int id)

@@ -23,18 +23,17 @@ namespace AdvancedAccessoriesMenu
             return chaCtrl == null ? null : chaCtrl.GetComponent<GroupsController>();
         }
 
-        public List<SlotGroup> Groups
+        public List<SlotGroup> Groups => OutfitGroups(CurrentOutfit);
+
+        public List<SlotGroup> OutfitGroups(int outfit)
         {
-            get
+            List<SlotGroup> groups;
+            if (!_groups.TryGetValue(outfit, out groups))
             {
-                List<SlotGroup> groups;
-                if (!_groups.TryGetValue(CurrentOutfit, out groups))
-                {
-                    groups = new List<SlotGroup>();
-                    _groups[CurrentOutfit] = groups;
-                }
-                return groups;
+                groups = new List<SlotGroup>();
+                _groups[outfit] = groups;
             }
+            return groups;
         }
 
         public string GetGroups(int outfit)
@@ -50,7 +49,7 @@ namespace AdvancedAccessoriesMenu
             AccessoryEvents.Changed();
         }
 
-        private int CurrentOutfit
+        public int CurrentOutfit
         {
             get
             {

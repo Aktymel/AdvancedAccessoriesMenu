@@ -105,6 +105,63 @@ namespace AdvancedAccessoriesMenu
             return false;
         }
 
+        // The names from the game's Copy window
+        public static string[] OutfitNames()
+        {
+            var count = MakerAPI.GetCharacterControl().chaFile.coordinate.Length;
+            var window = ScreenUi.FindInScene<CvsAccessoryCopy>();
+            var dropdowns = window == null ? null : Traverse.Create(window).Field("ddCoordeType").GetValue<TMP_Dropdown[]>();
+            var options = dropdowns == null || dropdowns.Length == 0 ? null : dropdowns[0].options;
+            var names = new string[count];
+            for (var i = 0; i < count; i++)
+                names[i] = options != null && i < options.Count ? options[i].text : "Outfit " + (i + 1);
+            return names;
+        }
+
+        // Into the same slots of another outfit with the game's Copy window, so KKAPI raises AccessoriesCopied
+        public static string CopyToOutfit(int first, int last, int outfit)
+        {
+            var window = ScreenUi.FindInScene<CvsAccessoryCopy>();
+            var page = window == null ? null : Traverse.Create(window);
+            var dropdowns = page == null ? null : page.Field("ddCoordeType").GetValue<TMP_Dropdown[]>();
+            var toggles = page == null ? null : page.Field("tglKind").GetValue<Toggle[]>();
+            if (dropdowns == null || dropdowns.Length < 2 || toggles == null) return "The game's Copy window is missing.";
+            Diag.Log($"Copy {first + 1}-{last + 1} to outfit {outfit}, {toggles.Length} copy toggles, window active {window.gameObject.activeInHierarchy}");
+            if (toggles.Length <= last) return "Open the game's Copy window once, then try again.";
+
+            var current = MakerAPI.GetCharacterControl().fileStatus.coordinateType;
+            var oldDestination = dropdowns[0].value;
+            var oldSource = dropdowns[1].value;
+            var oldToggles = new bool[toggles.Length];
+            for (var i = 0; i < toggles.Length; i++) oldToggles[i] = toggles[i].isOn;
+            try
+            {
+                dropdowns[0].value = outfit;
+                dropdowns[1].value = current;
+                for (var i = 0; i < toggles.Length; i++) toggles[i].isOn = i >= first && i <= last && !MakerSlots.IsEmpty(i);
+                AccessTools.Method(typeof(CvsAccessoryCopy), "CopyAcs").Invoke(window, null);
+            }
+            catch (Exception e)
+            {
+                AdvancedAccessoriesMenuPlugin.Logger.LogWarning($"Copy {first + 1}-{last + 1} to outfit {outfit}: {e}");
+                return "Copying failed.";
+            }
+            finally
+            {
+                for (var i = 0; i < toggles.Length; i++) toggles[i].isOn = oldToggles[i];
+                dropdowns[0].value = oldDestination;
+                dropdowns[1].value = oldSource;
+            }
+
+            for (var slot = first; slot <= last; slot++)
+            {
+                if (MakerSlots.IsEmpty(slot) || !MakerSlots.IsEmpty(outfit, slot)) continue;
+                AdvancedAccessoriesMenuPlugin.Logger.LogWarning($"Copy to outfit {outfit}: slot {slot + 1} is still empty there, source part {Part(slot)}");
+                return "Copying failed.";
+            }
+            return null;
+        }
+
         // Picks "None" in the slot page's type dropdown like the player does. The handler must run while the dropdown
         // shows "None", or it puts the kind window's accessory back into the slot.
         private static void Clear(CvsAccessory page)

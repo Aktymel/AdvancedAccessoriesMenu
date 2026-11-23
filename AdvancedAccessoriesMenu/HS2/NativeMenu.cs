@@ -35,7 +35,7 @@ namespace AdvancedAccessoriesMenu
             var go = GameObject.Find(SelectWindowPath);
             _selectWindow = go == null ? null : go.GetComponent<CvsSelectWindow>();
             _list = _selectWindow == null ? null : _selectWindow.transform.Find("Scroll View") as RectTransform;
-            if (_selectWindow != null) UiWatcher.Watch(_selectWindow.gameObject, Refresh);
+            if (_selectWindow != null) UiWatcher.WatchWithCanvas(_selectWindow.gameObject, Refresh);
             Refresh();
         }
 
@@ -57,7 +57,7 @@ namespace AdvancedAccessoriesMenu
 
             // Above the right end of the slot list, next to the "Accessories" title
             var list = ListRect;
-            var scale = ScreenUi.Scale;
+            var scale = ScreenUi.Scale(_selectWindow == null ? null : ScreenUi.RootCanvas(_selectWindow.transform));
             var size = new Vector2(ButtonWidth * scale, ButtonHeight * scale);
             _buttonRect = new Rect(list.xMax - size.x, list.y - size.y - ButtonGap * scale, size.x, size.y);
             Changed?.Invoke();

@@ -44,7 +44,7 @@ namespace AdvancedAccessoriesMenu
         {
             _panel = panel;
             _hiddenGroups.Clear();
-            UiWatcher.Watch(panel.gameObject, Refresh);
+            UiWatcher.WatchWithCanvas(panel.gameObject, Refresh);
             CharacterChanged();
         }
 
@@ -53,6 +53,13 @@ namespace AdvancedAccessoriesMenu
         {
             _character = CurrentCharacter;
             Refresh();
+        }
+
+        public void Toggle()
+        {
+            if (_panel == null || !_shown) return;
+            _advanced = !_advanced;
+            ApplyHidden();
         }
 
         public void OnGUI()
@@ -66,12 +73,12 @@ namespace AdvancedAccessoriesMenu
             }
             if (!_advanced) return;
 
-            var skin = GUI.skin;
-            GUI.skin = IMGUIUtils.SolidBackgroundGuiSkin;
-            var rect = new Rect(_panelRect.x, _panelRect.y, Mathf.Max(_panelRect.width, WindowWidth), WindowHeight);
+            GuiTheme.Begin();
+            var panel = ScreenUi.ToGui(_panelRect);
+            var rect = new Rect(panel.x, panel.y, Mathf.Max(panel.width, WindowWidth), WindowHeight);
             GUILayout.Window(WindowId, rect, DrawWindow, "Accessories menu");
             IMGUIUtils.EatInputInRect(rect);
-            GUI.skin = skin;
+            GuiTheme.End();
         }
 
         private void DrawWindow(int id)
@@ -108,7 +115,7 @@ namespace AdvancedAccessoriesMenu
             if (_shown)
             {
                 _panelRect = ScreenUi.ScreenRect((RectTransform)_panel.transform);
-                var scale = ScreenUi.Scale;
+                var scale = ScreenUi.Scale(ScreenUi.RootCanvas(_panel.transform));
                 var size = new Vector2(ButtonWidth * scale, ButtonHeight * scale);
                 _buttonRect = new Rect(_panelRect.x, _panelRect.y - size.y - ButtonGap * scale, size.x, size.y);
                 // Right of the character dropdown, which sits above the list

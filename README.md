@@ -16,6 +16,7 @@ Supported games: HS2, AI, KK, KKS
 - KKS / KK outfits have their own groups.
 - Groups can be hidden.
 - Advanced loader integration.
+- KKS / KK groups can be copied to other outfits.
 
 ## Requirements
 
@@ -49,6 +50,7 @@ Copy .dll into `BepInEx\plugins`.
 
 ## Changelog
 
+- 0.3.0 — Copy groups to other outfits and window themes.
 - 0.2.0 — Hide feature and Advanced Loader integration.
 - 0.1.1 — Bug fix for KK / KKS.
 - 0.1.0 — first version.

@@ -36,8 +36,9 @@ namespace AdvancedAccessoriesMenu
         private GUIStyle _rowButtonStyle;
         private GUIStyle _groupStyle;
         private GUIStyle _slotStyle;
+        private GUISkin _stylesFor;
 
-        // Call inside a window drawn with IMGUIUtils.SolidBackgroundGuiSkin
+        // Call inside a window drawn with GuiTheme
         public void Draw(ChaControl chaCtrl, Action<int, bool> setShown, Action changed)
         {
             if (chaCtrl != _builtFor)
@@ -52,8 +53,9 @@ namespace AdvancedAccessoriesMenu
                 GUILayout.FlexibleSpace();
                 return;
             }
-            if (_rowButtonStyle == null)
+            if (_stylesFor != GUI.skin)
             {
+                _stylesFor = GUI.skin;
                 var margin = GUI.skin.button.margin;
                 _rowButtonStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(margin.left, margin.right, 1, 1) };
                 _groupStyle = new GUIStyle(_rowButtonStyle) { alignment = TextAnchor.MiddleLeft, fontStyle = FontStyle.Bold, wordWrap = false, clipping = TextClipping.Clip };

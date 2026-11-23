@@ -36,6 +36,17 @@ namespace AdvancedAccessoriesMenu
             return part == null || part.type == EmptyType;
         }
 
+        public static int SlotCount(int outfit)
+        {
+            return MakerAPI.GetCharacterControl().chaFile.coordinate[outfit].accessory.parts.Length;
+        }
+
+        public static bool IsEmpty(int outfit, int slot)
+        {
+            var parts = MakerAPI.GetCharacterControl().chaFile.coordinate[outfit].accessory.parts;
+            return slot >= parts.Length || parts[slot].type == EmptyType;
+        }
+
         public static void Select(int slot)
         {
             var toggle = GetToggle(slot);

@@ -16,6 +16,14 @@ namespace AdvancedAccessoriesMenu
             watcher.Changed += changed;
         }
 
+        // Also its root canvas, which is resized with the game window and by UI scale plugins
+        public static void WatchWithCanvas(GameObject go, Action changed)
+        {
+            Watch(go, changed);
+            var canvas = ScreenUi.RootCanvas(go.transform);
+            if (canvas != null) Watch(canvas.gameObject, changed);
+        }
+
         private void OnEnable() => Raise();
         private void OnDisable() => Raise();
         private void OnCanvasGroupChanged() => Raise();

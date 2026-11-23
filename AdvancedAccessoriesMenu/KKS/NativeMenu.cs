@@ -39,7 +39,7 @@ namespace AdvancedAccessoriesMenu
             _changeSlot = UnityEngine.Object.FindObjectOfType<CustomAcsChangeSlot>();
             var scroll = _changeSlot == null ? null : _changeSlot.transform.Find(ScrollViewName);
             _scroll = scroll == null ? null : scroll.GetComponent<ScrollRect>();
-            if (_changeSlot != null) UiWatcher.Watch(_changeSlot.gameObject, Refresh);
+            if (_changeSlot != null) UiWatcher.WatchWithCanvas(_changeSlot.gameObject, Refresh);
             if (_scroll != null) _scroll.onValueChanged.AddListener(OnScrolled);
             if (!_slotEventAdded)
             {
@@ -89,7 +89,7 @@ namespace AdvancedAccessoriesMenu
             // Up to the settings page next to the slot buttons
             var right = firstRect.xMax;
             var page = _changeSlot.items[0].cgItem;
-            if (page != null) right = Mathf.Max(right, ScreenUi.ScreenRect((RectTransform)page.transform).xMin - Gap * ScreenUi.Scale);
+            if (page != null) right = Mathf.Max(right, ScreenUi.ScreenRect((RectTransform)page.transform).xMin - Gap * Scale);
 
             return new Rect(firstRect.x, top, right - firstRect.x, bottom - top);
         }
@@ -101,8 +101,10 @@ namespace AdvancedAccessoriesMenu
             var copy = items.Length < 2 || items[items.Length - 2].tglItem == null ? null : items[items.Length - 2].tglItem.transform.Find(SlotButtonName) as RectTransform;
             if (copy == null) return new Rect();
             var copyRect = ScreenUi.ScreenRect(copy);
-            return new Rect(copyRect.xMax + Gap * ScreenUi.Scale, copyRect.y, ButtonWidth * ScreenUi.Scale, copyRect.height);
+            return new Rect(copyRect.xMax + Gap * Scale, copyRect.y, ButtonWidth * Scale, copyRect.height);
         }
+
+        private static float Scale => ScreenUi.Scale(ScreenUi.RootCanvas(_changeSlot.transform));
 
         public static bool DrawToggleButton(bool advancedOpen)
         {

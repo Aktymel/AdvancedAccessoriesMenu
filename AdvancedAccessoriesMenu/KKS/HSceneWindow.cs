@@ -39,7 +39,7 @@ namespace AdvancedAccessoriesMenu
             public Transform All;
             public int Female;
             public Transform Target;
-            public Camera Camera;
+            public Canvas Canvas;
         }
 
         // From the HSprite.Init postfix
@@ -59,6 +59,13 @@ namespace AdvancedAccessoriesMenu
             Refresh();
         }
 
+        public void Toggle()
+        {
+            if (_panel == null || _panel.Target == null || _females[_panel.Female] == null) return;
+            _advanced = !_advanced;
+            ApplyHidden();
+        }
+
         public void OnGUI()
         {
             var panel = _panel;
@@ -67,8 +74,8 @@ namespace AdvancedAccessoriesMenu
             if (chaCtrl == null) return;
 
             // Above the accessory buttons, next to the Clothes button
-            var rect = ScreenUi.ScreenRect((RectTransform)panel.Target, panel.Camera);
-            var scale = ScreenUi.Scale;
+            var rect = ScreenUi.ScreenRect((RectTransform)panel.Target, panel.Canvas);
+            var scale = ScreenUi.Scale(panel.Canvas);
             var size = new Vector2(ButtonWidth * scale, ButtonHeight * scale);
             var button = new Rect(rect.x, rect.y - size.y - ButtonGap * scale, size.x, size.y);
             if (ScreenUi.DrawToggleButton(button, _advanced))
@@ -78,21 +85,21 @@ namespace AdvancedAccessoriesMenu
             }
             if (!_advanced) return;
 
-            var skin = GUI.skin;
-            GUI.skin = IMGUIUtils.SolidBackgroundGuiSkin;
+            GuiTheme.Begin();
             // Over the accessory buttons and the Show All column
             var right = rect.xMax;
             var bottom = rect.yMax;
             if (panel.All != null)
             {
-                var all = ScreenUi.ScreenRect((RectTransform)panel.All, panel.Camera);
+                var all = ScreenUi.ScreenRect((RectTransform)panel.All, panel.Canvas);
                 right = Mathf.Max(right, all.xMax);
                 bottom = Mathf.Max(bottom, all.yMax);
             }
-            var window = new Rect(rect.x, rect.y, Mathf.Max(right - rect.x, WindowWidth), Mathf.Max(bottom - rect.y, WindowHeight));
+            var area = ScreenUi.ToGui(new Rect(rect.x, rect.y, right - rect.x, bottom - rect.y));
+            var window = new Rect(area.x, area.y, Mathf.Max(area.width, WindowWidth), Mathf.Max(area.height, WindowHeight));
             GUILayout.Window(WindowId, window, id => DrawWindow(chaCtrl), "Accessories menu");
             IMGUIUtils.EatInputInRect(window);
-            GUI.skin = skin;
+            GuiTheme.End();
         }
 
         private void DrawWindow(ChaControl chaCtrl)
@@ -125,7 +132,7 @@ namespace AdvancedAccessoriesMenu
                 // Our own CanvasGroup on the target doesn't count
                 if (!ScreenUi.IsShown(target.parent)) continue;
                 candidate.Target = target;
-                candidate.Camera = ScreenUi.CanvasCamera(target);
+                candidate.Canvas = ScreenUi.RootCanvas(target);
                 _panel = candidate;
                 break;
             }
@@ -163,12 +170,12 @@ namespace AdvancedAccessoriesMenu
                 return;
             }
             var target = _panel.Target;
-            var sb = new StringBuilder("H accessory panel ").Append(target.name).Append(' ').Append(ScreenUi.ScreenRect((RectTransform)target, _panel.Camera));
+            var sb = new StringBuilder("H accessory panel ").Append(target.name).Append(' ').Append(ScreenUi.ScreenRect((RectTransform)target, _panel.Canvas));
             if (target.parent != null)
                 foreach (Transform sibling in target.parent)
                 {
                     sb.Append("\n  ").Append(sibling.name).Append(sibling.gameObject.activeSelf ? "" : " (inactive)");
-                    if (sibling is RectTransform rt) sb.Append(' ').Append(ScreenUi.ScreenRect(rt, _panel.Camera));
+                    if (sibling is RectTransform rt) sb.Append(' ').Append(ScreenUi.ScreenRect(rt, _panel.Canvas));
                 }
             Diag.Log(sb.ToString());
         }

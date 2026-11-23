@@ -14,7 +14,6 @@ namespace AdvancedAccessoriesMenu
         private const string TextFieldName = "AdvancedAccessoriesMenuText";
         // Slots the game has without MoreAccessories
         private const int VanillaSlotCount = 20;
-        private static readonly Color SelectedColor = new Color(0.4f, 0.8f, 1f);
 
         private const float RowHeight = 24;
         private const float ButtonHeight = 22;
@@ -55,6 +54,9 @@ namespace AdvancedAccessoriesMenu
         private string _moveTo = "";
         // The slot whose "→" was pressed, -1 when no slot is being moved
         private int _movingSlot = -1;
+        // Outfits to copy the edited group to, null when not copying
+        private string[] _outfitNames;
+        private string _done;
         private string _name = "";
         private string _first = "";
         private string _last = "";
@@ -64,7 +66,9 @@ namespace AdvancedAccessoriesMenu
         private GUIStyle _rowButtonStyle;
         private GUIStyle _groupStyle;
         private GUIStyle _slotStyle;
+        private GUIStyle _selectedSlotStyle;
         private GUIStyle _warningStyle;
+        private GUISkin _stylesFor;
 
         public bool Visible;
 
@@ -83,25 +87,24 @@ namespace AdvancedAccessoriesMenu
         }
 
         // Drawn over the game's slot list, so it can't be dragged or resized
+        // rect in screen pixels
         public void OnGUI(Rect rect)
         {
             if (!Visible) return;
+            rect = ScreenUi.ToGui(rect);
 
-            var skin = GUI.skin;
-            GUI.skin = IMGUIUtils.SolidBackgroundGuiSkin;
-            if (_headerStyle == null) _headerStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
-            if (_rowButtonStyle == null)
+            GuiTheme.Begin();
+            if (_stylesFor != GUI.skin)
             {
+                _stylesFor = GUI.skin;
+                _headerStyle = GuiTheme.Header;
+                _warningStyle = GuiTheme.Warning;
                 // Rows have a fixed height, so buttons in them keep only a thin vertical margin
                 var margin = GUI.skin.button.margin;
                 _rowButtonStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(margin.left, margin.right, 1, 1) };
                 _groupStyle = new GUIStyle(_rowButtonStyle) { alignment = TextAnchor.MiddleLeft, fontStyle = FontStyle.Bold, wordWrap = false, clipping = TextClipping.Clip };
                 _slotStyle = new GUIStyle(_rowButtonStyle) { alignment = TextAnchor.MiddleLeft, wordWrap = false, clipping = TextClipping.Clip };
-            }
-            if (_warningStyle == null)
-            {
-                _warningStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, wordWrap = true };
-                _warningStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+                _selectedSlotStyle = new GUIStyle(GuiTheme.SelectedButton) { margin = _rowButtonStyle.margin, alignment = TextAnchor.MiddleLeft, wordWrap = false, clipping = TextClipping.Clip };
             }
             // A click outside the menu takes the keyboard away from its text fields, so other plugins' hotkeys work again
             if (_typing && Event.current.type == EventType.MouseDown && !rect.Contains(Event.current.mousePosition))
@@ -111,7 +114,7 @@ namespace AdvancedAccessoriesMenu
             }
             GUILayout.Window(WindowId, rect, DrawWindow, "Accessories menu", GUILayout.Width(rect.width), GUILayout.Height(rect.height));
             IMGUIUtils.EatInputInRect(rect);
-            GUI.skin = skin;
+            GuiTheme.End();
         }
 
         private static string TextField(string text, params GUILayoutOption[] options)
@@ -162,6 +165,7 @@ namespace AdvancedAccessoriesMenu
             DrawList(groups);
             DrawNativeButtons();
             if (_movingSlot >= 0) DrawSlotMove(groups);
+            else if (_outfitNames != null) DrawOutfitCopy();
             else DrawEditor(groups);
         }
 
@@ -310,11 +314,8 @@ namespace AdvancedAccessoriesMenu
         {
             var slot = row.Slot;
             GUILayout.Space(24);
-            var color = GUI.backgroundColor;
-            if (row.Selected) GUI.backgroundColor = SelectedColor;
-            if (GUILayout.Button(row.Text, _slotStyle, GUILayout.MinWidth(0), GUILayout.Height(ButtonHeight))) MakerSlots.Select(slot);
+            if (GUILayout.Button(row.Text, row.Selected ? _selectedSlotStyle : _slotStyle, GUILayout.MinWidth(0), GUILayout.Height(ButtonHeight))) MakerSlots.Select(slot);
             if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition)) _hoveredSlot = slot;
-            GUI.backgroundColor = color;
             if (SlotMover.Available && !row.Empty && GUILayout.Button("→", _rowButtonStyle, GUILayout.Width(24), GUILayout.Height(ButtonHeight)))
             {
                 ClearEditor();
@@ -384,6 +385,13 @@ namespace AdvancedAccessoriesMenu
                 if (GUILayout.Button("Move", GUILayout.MinWidth(0))) MoveEdited(groups, false);
                 if (GUILayout.Button("Copy", GUILayout.MinWidth(0))) MoveEdited(groups, true);
                 GUILayout.EndHorizontal();
+#if KKS || KK
+                if (GUILayout.Button("Copy to outfit"))
+                {
+                    _outfitNames = SlotMover.OutfitNames();
+                    _error = null;
+                }
+#endif
             }
 
             if (_error != null) GUILayout.Label(_error, _warningStyle);
@@ -400,6 +408,30 @@ namespace AdvancedAccessoriesMenu
                 if (GUILayout.Button("Cancel", GUILayout.Height(26), GUILayout.Width(56))) ClearEditor();
             }
             GUILayout.EndHorizontal();
+        }
+
+        private void DrawOutfitCopy()
+        {
+            GUILayout.Label($"Copy \"{_editing.Name}\" to", _headerStyle);
+            var current = _controller.CurrentOutfit;
+            for (var outfit = 0; outfit < _outfitNames.Length; outfit++)
+            {
+                if (outfit == current || !GUILayout.Button(_outfitNames[outfit], _slotStyle, GUILayout.MinWidth(0))) continue;
+#if KKS || KK
+                _error = SlotMoves.CopyGroupToOutfit(_controller, _editing, outfit, _outfitNames[outfit]);
+#endif
+                _done = _error == null ? $"Copied to {_outfitNames[outfit]}." : null;
+                AccessoryEvents.Changed();
+                GUIUtility.ExitGUI();
+            }
+            if (_error != null) GUILayout.Label(_error, _warningStyle);
+            if (_done != null) GUILayout.Label(_done);
+            if (GUILayout.Button("Back", GUILayout.Height(26)))
+            {
+                _outfitNames = null;
+                _error = null;
+                _done = null;
+            }
         }
 
         private void DeleteEdited(List<SlotGroup> groups)
@@ -436,6 +468,8 @@ namespace AdvancedAccessoriesMenu
         private void ClearEditor()
         {
             _movingSlot = -1;
+            _outfitNames = null;
+            _done = null;
             _moveTo = "";
             _editing = null;
             _confirmDelete = false;
