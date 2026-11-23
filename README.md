@@ -4,9 +4,7 @@ A plugin to create accessory groups for easier managment, you can then move/copy
 
 Supported games: HS2, AI, KK, KKS
 
-| Old menu messy | | New menu clean |
-|---|:---:|---|
-| ![Old menu messy](AdvancedAccessoriesMenu/screenshots/1_mess.png) | ➜ | ![New menu clean](AdvancedAccessoriesMenu/screenshots/1_neat.png) |
+![Advanced Accessories Menu](AdvancedAccessoriesMenu/screenshots/2_KKS_neat.png)
 
 ## Features
 
